@@ -26,6 +26,9 @@ const (
 	psqlGetAllProduct = `SELECT id, name, observations, price, created_at, updated_at 
 	FROM products`
 	psqlGetProductById = psqlGetAllProduct + ` WHERE id = $1`
+	psqlUpdateProduct  = `UPDATE products SET name = $1, observations = $2,
+	price = $3, updated_at = $4 WHERE id = $5 ;`
+	psqlDeleteProduct = `DELETE FROM products WHERE id = $1 ;`
 )
 
 // RETURNING para que el sql nos devuelva algo, porque el exec de postgres no devuelve nada
@@ -117,6 +120,52 @@ func (p *PsqlProduct) GetByID(id uint) (*product.Model, error) {
 	defer stmt.Close()
 
 	return scanRowProduct(stmt.QueryRow(id))
+}
+
+// Update implement the interface product.Storage
+func (p *PsqlProduct) Update(m *product.Model) error {
+	stmt, err := p.db.Prepare(psqlUpdateProduct)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	res, err := stmt.Exec(
+		m.Name,
+		stringToNull(m.Observations),
+		m.Price,
+		timeToNull(m.UpdateAt),
+		m.ID,
+	)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("No existe el product con id: %d", m.ID)
+	}
+	fmt.Println("Se actualizo el producto correctamente")
+	return nil
+}
+
+// Delete implement the interface product.Storage
+func (p *PsqlProduct) Delete(id uint) error {
+	stmt, err := p.db.Prepare(psqlDeleteProduct)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(id)
+	if err != nil {
+		return err
+	}
+	fmt.Println("Se elimino el producto correctamente")
+	return nil
 }
 
 func scanRowProduct(s scanner) (*product.Model, error) {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	_ "github.com/lib/pq"
 )
@@ -37,9 +38,19 @@ func Pool() *sql.DB {
 	return db
 }
 
+// Helper intermedio para ver si un string es null en sql
 func stringToNull(s string) sql.NullString {
 	null := sql.NullString{String: s}
 	if null.String != "" {
+		null.Valid = true
+	}
+	return null
+}
+
+// Helper intermedio para ver si un timestamp es null en sql
+func timeToNull(t time.Time) sql.NullTime {
+	null := sql.NullTime{Time: t}
+	if !null.Time.IsZero() {
 		null.Valid = true
 	}
 	return null
