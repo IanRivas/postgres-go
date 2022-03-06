@@ -1,0 +1,45 @@
+package storage
+
+import (
+	"database/sql"
+	"fmt"
+)
+
+//le dice migrate a CREAR
+const (
+	psqlMigrateInvoiceHeader = `CREATE TABLE IF NOT EXISTS invoice_headers(
+		id SERIAL NOT NULL,
+		client VARCHAR(100) NOT NULL,
+		created_at TIMESTAMP NOT NULL DEFAULT now(),
+		updated_at TIMESTAMP,
+		CONSTRAINT invoice_headers_id_pk PRIMARY KEY (id)
+	);`
+)
+
+// para trabajar con postgres y el product
+type PsqlInvoiceHeader struct {
+	db *sql.DB
+}
+
+func NewPsqlInvoiceHeader(db *sql.DB) *PsqlInvoiceHeader {
+	return &PsqlInvoiceHeader{db}
+}
+
+// Migrate implement the interface invoiceHeader.Storage
+func (p *PsqlInvoiceHeader) Migrate() error {
+	stmt, err := p.db.Prepare(psqlMigrateInvoiceHeader)
+	fmt.Println(stmt)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec()
+	if err != nil {
+		fmt.Println("entre a migrate")
+		return err
+	}
+
+	fmt.Println("Migracion de invoiceHeader ejecutada correctamente")
+	return nil
+}
